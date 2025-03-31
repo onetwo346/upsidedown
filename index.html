@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upside Down</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+        }
+        #intro {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: #fff3a5;
+            padding: 20px;
+            box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.5);
+            transform: rotate(-5deg);
+        }
+        #gateway, #store {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        #store {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body>
+    <div id="intro">
+        <h1>Welcome to Upside Down</h1>
+        <p>A 3D gift card experience. Tap below to enter.</p>
+        <button onclick="showGateway()">Tap to Enter</button>
+    </div>
+    <div id="gateway">
+        <h2>Enter Invite Code</h2>
+        <input type="text" id="inviteCode" placeholder="Your unique code">
+        <button onclick="checkInvite()">Submit</button>
+    </div>
+    <div id="store">
+        <h2>Gift Card Store</h2>
+        <p>Inventory: <span id="inventory">10</span> cards left</p>
+        <ul id="cardList">
+            <li>Gift Card 1 - $50 <button onclick="buyCard(1)">Buy</button></li>
+            <li>Gift Card 2 - $100 <button onclick="buyCard(2)">Buy</button></li>
+        </ul>
+        <div id="checkout" style="display: none;">
+            <h3>Checkout</h3>
+            <input type="email" id="email" placeholder="Your email">
+            <button onclick="processPurchase()">Pay with Stripe/Bitcoin</button>
+        </div>
+        <div id="confirmation" style="display: none;">
+            <h3>Your Gift Card</h3>
+            <p>Code: <span id="cardCode"></span></p>
+            <p>Sent to your email too!</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script>
+        // 3D Background
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        const geometry = new THREE.BoxGeometry();
+        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+        camera.position.z = 5;
+        function animate() {
+            requestAnimationFrame(animate);
+            cube.rotation.x += 0.01;
+            cube.rotation.y += 0.01;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Invite System
+        const validCodes = ["XD123", "UP456"]; // Example codes
+        function showGateway() {
+            document.getElementById("intro").style.display = "none";
+            document.getElementById("gateway").style.display = "block";
+        }
+        function checkInvite() {
+            const code = document.getElementById("inviteCode").value;
+            if (validCodes.includes(code)) {
+                document.getElementById("gateway").style.display = "none";
+                document.getElementById("store").style.display = "block";
+            } else {
+                alert("Invalid code!");
+            }
+        }
+
+        // Inventory Tracking (AI Simulation)
+        let inventory = 10;
+        function updateInventory() {
+            inventory--;
+            document.getElementById("inventory").textContent = inventory;
+            if (inventory <= 0) {
+                alert("Inventory sold out! Notifying admin...");
+                // Simulate notifying you (e.g., email trigger here)
+            }
+        }
+
+        // Purchase Flow
+        let currentCard;
+        function buyCard(cardId) {
+            currentCard = cardId;
+            document.getElementById("cardList").style.display = "none";
+            document.getElementById("checkout").style.display = "block";
+        }
+        function processPurchase() {
+            const email = document.getElementById("email").value;
+            if (!email) {
+                alert("Please enter an email!");
+                return;
+            }
+            updateInventory();
+            const code = `GIFT-${currentCard}-${Math.random().toString(36).slice(2, 7)}`;
+            document.getElementById("cardCode").textContent = code;
+            document.getElementById("checkout").style.display = "none";
+            document.getElementById("confirmation").style.display = "block";
+            // Simulate sending email with code here
+            console.log(`Email sent to ${email} with code: ${code}`);
+        }
+    </script>
+</body>
+</html>
