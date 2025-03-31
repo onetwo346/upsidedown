@@ -28,10 +28,11 @@
             transition: all 0.3s ease;
         }
         #intro {
-            background: #fff3a5;
+            background: #f5e68f; /* Softer yellow, less bright */
             border-radius: 15px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             transform: rotate(-2deg);
+            color: #333; /* Darker text for readability */
         }
         #gateway {
             display: none;
@@ -151,17 +152,32 @@
     <div id="store">
         <h1>Upside Down</h1>
         <h2>Gift Card Store</h2>
-        <p id="inventory">Inventory: <span>10</span> cards left</p>
+        <p id="inventory">Inventory: <span>5</span> cards left</p>
         <div class="card-grid" id="cardList">
             <div class="card">
-                <img src="https://via.placeholder.com/200?text=Gift+Card+1" alt="Gift Card 1">
-                <p>Gift Card 1 - $50</p>
+                <img src="https://via.placeholder.com/200?text=Card+1" alt="Gift Card 1">
+                <p>Gift Card 1 - $25</p>
                 <button onclick="buyCard(1)">Buy Now</button>
             </div>
             <div class="card">
-                <img src="https://via.placeholder.com/200?text=Gift+Card+2" alt="Gift Card 2">
-                <p>Gift Card 2 - $100</p>
+                <img src="https://via.placeholder.com/200?text=Card+2" alt="Gift Card 2">
+                <p>Gift Card 2 - $50</p>
                 <button onclick="buyCard(2)">Buy Now</button>
+            </div>
+            <div class="card">
+                <img src="https://via.placeholder.com/200?text=Card+3" alt="Gift Card 3">
+                <p>Gift Card 3 - $75</p>
+                <button onclick="buyCard(3)">Buy Now</button>
+            </div>
+            <div class="card">
+                <img src="https://via.placeholder.com/200?text=Card+4" alt="Gift Card 4">
+                <p>Gift Card 4 - $100</p>
+                <button onclick="buyCard(4)">Buy Now</button>
+            </div>
+            <div class="card">
+                <img src="https://via.placeholder.com/200?text=Card+5" alt="Gift Card 5">
+                <p>Gift Card 5 - $150</p>
+                <button onclick="buyCard(5)">Buy Now</button>
             </div>
         </div>
         <div id="checkout" style="display: none;">
@@ -177,14 +193,35 @@
         <div id="confirmation" style="display: none;">
             <h3>Your Gift Card</h3>
             <p>Code: <span id="cardCode"></span></p>
-            <p>Also sent to your email!</p>
+            <p>Check your email for details!</p>
             <button onclick="backToStore()">Back to Store</button>
         </div>
     </div>
 
+    <!-- EmailJS SDK -->
+    <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
     <script>
+        // Initialize EmailJS with your Public Key
+        emailjs.init("YOUR_EMAILJS_PUBLIC_KEY"); // Replace with your EmailJS Public Key
+
+        // Gift Card Data
+        const giftCards = [
+            { id: 1, name: "Gift Card 1", value: 25, code: "GIFT-1-ABCDE", image: "https://via.placeholder.com/200?text=Card+1", available: true },
+            { id: 2, name: "Gift Card 2", value: 50, code: "GIFT-2-FGHIJ", image: "https://via.placeholder.com/200?text=Card+2", available: true },
+            { id: 3, name: "Gift Card 3", value: 75, code: "GIFT-3-KLMNO", image: "https://via.placeholder.com/200?text=Card+3", available: true },
+            { id: 4, name: "Gift Card 4", value: 100, code: "GIFT-4-PQRST", image: "https://via.placeholder.com/200?text=Card+4", available: true },
+            { id: 5, name: "Gift Card 5", value: 150, code: "GIFT-5-UVWXY", image: "https://via.placeholder.com/200?text=Card+5", available: true }
+        ];
+
+        // Load saved state from localStorage
+        let inventory = localStorage.getItem("inventory") ? parseInt(localStorage.getItem("inventory")) : 5;
+        let savedCards = JSON.parse(localStorage.getItem("giftCards")) || giftCards;
+
+        // Update UI with saved data
+        document.getElementById("inventory").innerHTML = `Inventory: <span>${inventory}</span> cards left`;
+
         // Invite System
-        const validCodes = ["XD123", "UP456"]; // Your codes here
+        const validCodes = ["XD123", "UP456"];
         function showGateway() {
             document.getElementById("intro").style.display = "none";
             document.getElementById("gateway").style.display = "block";
@@ -199,11 +236,11 @@
             }
         }
 
-        // Inventory Tracking (Frontend-Only)
-        let inventory = 10;
+        // Inventory Tracking
         function updateInventory() {
             inventory--;
             document.getElementById("inventory").innerHTML = `Inventory: <span>${inventory}</span> cards left`;
+            localStorage.setItem("inventory", inventory);
             if (inventory <= 0) {
                 alert("Inventory sold out! Please restock.");
             }
@@ -212,7 +249,7 @@
         // Purchase Flow
         let currentCard;
         function buyCard(cardId) {
-            currentCard = cardId;
+            currentCard = savedCards.find(card => card.id === cardId);
             document.getElementById("cardList").style.display = "none";
             document.getElementById("checkout").style.display = "block";
         }
@@ -222,12 +259,34 @@
                 alert("Please enter an email!");
                 return;
             }
+            if (!currentCard || !currentCard.available) {
+                alert("Card unavailable!");
+                return;
+            }
+
             updateInventory();
-            const code = `GIFT-${currentCard}-${Math.random().toString(36).slice(2, 7)}`;
-            document.getElementById("cardCode").textContent = code;
+            currentCard.available = false;
+            localStorage.setItem("giftCards", JSON.stringify(savedCards));
+
+            document.getElementById("cardCode").textContent = currentCard.code;
             document.getElementById("checkout").style.display = "none";
             document.getElementById("confirmation").style.display = "block";
-            console.log(`Code ${code} would be emailed to ${email}`); // Placeholder for email
+
+            // Send email with card details
+            emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", {
+                to_email: email,
+                card_name: currentCard.name,
+                card_value: currentCard.value,
+                card_code: currentCard.code,
+                card_image: currentCard.image
+            }).then(
+                () => console.log("Email sent successfully!"),
+                (error) => console.error("Email failed:", error)
+            );
+
+            // Disable the purchased card’s button
+            const cardButton = document.querySelector(`button[onclick="buyCard(${currentCard.id})"]`);
+            if (cardButton) cardButton.disabled = true;
         }
         function backToStore() {
             document.getElementById("confirmation").style.display = "none";
